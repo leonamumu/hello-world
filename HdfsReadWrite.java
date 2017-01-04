@@ -1,8 +1,11 @@
 package com.beifeng.Hdsetest;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -73,14 +76,55 @@ public class HdfsReadWrite {
 	}
 	
 	
-	public void mergeLittleFiles()
+	public void work(File localFile,OutputStream out) throws IOException
 	{
-		
+		InputStream in = null;
+		if(localFile.isFile())
+		{
+			int byteRead = 0;  
+            byte[] buffer = new byte[256];  
+            while ((byteRead = in.read(buffer)) > 0) {  
+                out.write(buffer, 0, byteRead);  
+            }  
+		}
+		else if(localFile.isDirectory())
+		{
+			File[] files = localFile.listFiles();
+			for(int i=0;i<files.length;i++)
+			{
+				if(files[i].isFile())
+				{
+					in = new BufferedInputStream(new FileInputStream(files[i]));
+					int byteRead = 0;
+					byte[] buffer =  new byte[256];
+					while((byteRead=in.read(buffer))>0)
+					{
+						out.write(buffer, 0, byteRead);
+					}
+				}
+				else
+				{
+					work(files[i],out);
+				}
+			}
+		}
 	}
 	
-	
-	
-	
+	/**
+	 * Linux环境上的目录里的文件，合并到一个文件中，复制到HDFS。
+	 * date: 2017-1-3
+	 * @throws IOException 
+	 * 
+	 * hadoop jar hdfsAPI.jar com.beifeng.Hdsetest.HdfsReadWrite 3 /home/natty.ma/bigdata/hadoop/files/hdfsapi /user/natty.ma/hdfsapi/output2
+	 */
+	public void mergeLittleFiles(File localFile, Path hdpath) throws IOException
+	{
+		conf = new Configuration();
+		fs = FileSystem.get(conf);
+		
+		FSDataOutputStream out = fs.create(hdpath);
+		work(localFile,out);
+	}
 	
 	/**
 	 * 
@@ -103,6 +147,13 @@ public class HdfsReadWrite {
 			File file = new File(args[1]);
 			Path path = new Path(args[2]);
 			hrw.writeFromlocalToHdfs(file, path);
+		}
+		
+		if(args[0].equals("3"))
+		{
+			File file = new File(args[1]);
+			Path path = new Path(args[2]);
+			hrw.mergeLittleFiles(file, path);
 		}
 
 	}
