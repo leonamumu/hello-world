@@ -60,7 +60,7 @@ public class WordCountMapReduce extends Configured implements Tool {
 	public int run(String[] args) throws IOException, ClassNotFoundException, InterruptedException
 	{
 		//获取配置文件：
-		Configuration conf = new Configuration();
+		Configuration conf = super.getConf();
 		
 		//创建job：
 		Job job = Job.getInstance(conf, this.getClass().getSimpleName());
